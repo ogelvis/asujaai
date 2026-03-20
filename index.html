@@ -353,13 +353,8 @@ body{
     <button class="close-btn" onclick="closeDrawer()">✕</button>
   </div>
   <div class="api-section">
-    <div class="api-label">Gemini API Key</div>
-    <div class="api-row" id="api-form">
-      <input class="api-input" id="api-key" type="password" placeholder="Paste AIza... key" />
-      <button class="api-save" onclick="connect()">Save</button>
-    </div>
-    <div class="conn-badge" id="conn-badge">
-      <div class="cdot"></div><span>Connected · Free</span>
+    <div class="conn-badge" id="conn-badge" style="display:flex;">
+      <div class="cdot"></div><span>Connected · Gemini Free</span>
     </div>
   </div>
   <div class="conv-section">
@@ -402,7 +397,7 @@ body{
       <div class="empty-state" id="empty">
         <div class="empty-orb">ASUJA</div>
         <div class="empty-title">What's on your mind?</div>
-        <div class="empty-sub">Free AI powered by Gemini. Tap ☰ to connect your key.</div>
+        <div class="empty-sub">Free AI powered by Gemini. Ready to chat!</div>
         <div class="suggestions">
           <div class="sug-card" onclick="qs('Write a short story about a robot')"><strong>✍️ Creative</strong>Write me a short story</div>
           <div class="sug-card" onclick="qs('Explain quantum entanglement simply')"><strong>🔬 Science</strong>Explain quantum physics</div>
@@ -440,7 +435,7 @@ body{
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
 <script>
 const CK=(k,v,d)=>{if(v!==undefined){const e=new Date;e.setTime(e.getTime()+d*864e5);document.cookie=`${k}=${encodeURIComponent(v)};expires=${e.toUTCString()};path=/;SameSite=Strict`;}else{const m=document.cookie.match(new RegExp('(?:^|; )'+k+'=([^;]*)'));return m?decodeURIComponent(m[1]):'';}}
-let key='',hist=[],busy=false,streaming=true,md=true,recog=null,listening=false,convs=[],cid=null;
+let key='connected',hist=[],busy=false,streaming=true,md=true,recog=null,listening=false,convs=[],cid=null;
 marked.setOptions({breaks:true,gfm:true});
 const SYS="You are ASUJA, a sharp, helpful, and personable AI assistant. Be concise, warm, and direct. Use markdown naturally when helpful.";
 
@@ -448,10 +443,9 @@ window.onload=()=>{
   const t=CK('at')||'dark';
   document.documentElement.setAttribute('data-theme',t);
   document.getElementById('theme-btn').textContent=t==='dark'?'🌙':'☀️';
-  const k=CK('ak');
-  if(k){key=k;document.getElementById('api-key').value=k;setConn();}
+  setConn();
   const h=CK('ah');
-  if(h&&key){try{hist=JSON.parse(h);if(hist.length){rmEmpty();hist.forEach(m=>m.role==='user'?rUser(m.content):rBot(m.content));}}catch(e){hist=[];}}
+  if(h){try{hist=JSON.parse(h);if(hist.length){rmEmpty();hist.forEach(m=>m.role==='user'?rUser(m.content):rBot(m.content));}}catch(e){hist=[];}}
   loadConvs();
   window.addEventListener('resize',()=>{document.body.style.height=window.innerHeight+'px';scrollBot();});
   document.body.style.height=window.innerHeight+'px';
@@ -568,9 +562,9 @@ async function doStream(model){
   m.appendChild(g);scrollBot();
   const bubble=document.getElementById('sb');
   let full='';
-  const url=`https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${key}`;
+  const url='https://asuja.ogbidielvis.workers.dev';
   try{
-    const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system_instruction:{parts:[{text:SYS}]},contents:buildC(),generationConfig:{maxOutputTokens:1024,temperature:0.9}})});
+    const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model,stream:true,payload:{system_instruction:{parts:[{text:SYS}]},contents:buildC(),generationConfig:{maxOutputTokens:1024,temperature:0.9}}})});
     if(!res.ok){const err=await res.json();bubble.innerHTML=`<span style="color:#fca5a5">⚠ ${err.error?.message||'Failed'}</span>`;hist.pop();return;}
     const reader=res.body.getReader();const dec=new TextDecoder();
     while(true){
@@ -595,9 +589,9 @@ async function doStream(model){
 }
 
 async function doNormal(model){
-  const url=`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+  const url='https://asuja.ogbidielvis.workers.dev';
   try{
-    const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system_instruction:{parts:[{text:SYS}]},contents:buildC(),generationConfig:{maxOutputTokens:1024,temperature:0.9}})});
+    const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model,stream:false,payload:{system_instruction:{parts:[{text:SYS}]},contents:buildC(),generationConfig:{maxOutputTokens:1024,temperature:0.9}}})});
     const data=await res.json();
     if(data.error)throw new Error(data.error.message);
     const reply=data.candidates?.[0]?.content?.parts?.[0]?.text||'No response';
